@@ -108,7 +108,7 @@ textarea{resize:vertical;min-height:110px}
   <div class="userbox">
     <span id="who" class="small authlabel">로그인하지 않음</span>
     <button id="adminBtn" class="hidden">신고함</button>
-    <button id="myPageBtn">마이페이지</button>
+    <button id="friendsManageBtn">친구 관리</button>
     <button id="authBtn" class="primary">로그인</button>
   </div>
 </div></header>
@@ -168,7 +168,7 @@ textarea{resize:vertical;min-height:110px}
 <div class="actions">
 <button id="myPostsBtn">내 게시글</button>
 <button id="myCommentsBtn">내 댓글</button>
-<button id="friendsBtn">친구 / 유저 검색</button>
+<button id="friendsBtn">친구 관리</button>
 </div>
 <div id="myActivity" style="margin-top:18px"></div>
 <hr style="border-color:var(--line);margin:20px 0">
@@ -466,7 +466,7 @@ function openProfile(){
 
 $("authBtn").onclick=()=>user?openProfile():show("authModal");
 $("joinBtn").onclick=()=>user?openProfile():show("authModal");
-$("myPageBtn").onclick=()=>user?openProfile():show("authModal");
+$("friendsManageBtn").onclick=()=>user?openFriends():show("authModal");
 $("adminBtn").onclick=openAdmin;
 $("friendsBtn").onclick=openFriends;
 $("userSearchBtn").onclick=searchUsers;

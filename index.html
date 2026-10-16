@@ -519,14 +519,42 @@ async function loadChatMessages(){
  el.scrollTop=el.scrollHeight;
 }
 async function createChatRoom(){
- if(!(["developer","admin"].includes(profile?.role))){toast("관리자 또는 개발자만 채팅방을 만들 수 있어요.");return}
- const name=$("newRoomName").value.trim();if(!name){toast("채팅방 이름을 입력해 주세요.");return}
- const {data:room,error}=await db.from("chat_rooms").insert({name,created_by:user.id}).select("id,name").single();
- if(error){toast("채팅방 생성 실패: "+error.message);return}
- const {error:memberError}=await db.from("chat_room_members").insert({room_id:room.id,user_id:user.id,invited_by:user.id});
- if(memberError){toast("방은 만들었지만 생성자 입장 권한 설정에 실패했어요: "+memberError.message);return}
- $("newRoomName").value="";toast("채팅방을 만들었어요.");await loadChatRooms();
+  if(!user || !["developer","admin"].includes(profile?.role)){
+    toast("관리자 또는 개발자만 채팅방을 만들 수 있어요.");
+    return;
+  }
 
+  const name=$("newRoomName").value.trim();
+  if(!name){
+    toast("채팅방 이름을 입력해 주세요.");
+    return;
+  }
+
+  const {data:room,error}=await db.rpc("create_chat_room",{
+    p_name:name
+  });
+
+  if(error){
+    toast("채팅방 생성 실패: "+error.message);
+    return;
+  }
+
+  const {error:memberError}=await db.from("chat_room_members").insert({
+    room_id:room.id,
+    user_id:user.id,
+    invited_by:user.id
+  });
+
+  if(memberError){
+    toast("방은 생성됐지만 입장 권한 설정 실패: "+memberError.message);
+    await loadChatRooms();
+    return;
+  }
+
+  $("newRoomName").value="";
+  toast("채팅방을 만들었어요.");
+  await loadChatRooms();
+  }
 }
 async function sendChatMessage(){
  if(!requireUser()||!activeChatRoom)return;

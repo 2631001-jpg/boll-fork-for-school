@@ -130,7 +130,7 @@ textarea{resize:vertical;min-height:110px}
   </div></div>
   <div class="section-head"><h1 id="feedTitle">전체 글</h1><select id="sort" style="width:auto;max-width:145px"><option value="new">최신순</option><option value="hot">인기순</option></select></div>
   <div id="feed" class="feed"><div class="empty">커뮤니티에 연결하는 중...</div></div>
-  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" type="search" name="community-post-search" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" placeholder="게시글 검색..." aria-label="게시글 검색"></div>
+  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" type="search" name="site_query_7f3a" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" readonly placeholder="게시글 검색..." aria-label="게시글 검색"></div>
 </main>
 
 <aside class="rightcol"><div class="rightstack">
@@ -497,6 +497,9 @@ $("myCommentsBtn").onclick=async()=>{
 };
 
 $("writeBtn").onclick=openWriter;
+// 비밀번호 관리자가 검색창을 로그인 칸으로 오인하는 현상을 줄임
+$("search").addEventListener("pointerdown",()=>{$("search").removeAttribute("readonly");$("search").setAttribute("autocomplete","new-password")},{once:true});
+$("search").addEventListener("keydown",()=>{$("search").removeAttribute("readonly");$("search").setAttribute("autocomplete","new-password")},{once:true});
 $("search").oninput=()=>{currentPage=1;render()};
 $("sort").onchange=()=>{currentPage=1;render()};
 function setCat(cat){

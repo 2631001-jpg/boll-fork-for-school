@@ -58,7 +58,7 @@
 <div id="toast" class="toast hidden" role="status"></div>
 <script>
 (() => {
-const SUPABASE_URL = "https://supabase.com/dashboard/project/hrutxtcgsojpphrbvngw";
+const SUPABASE_URL = "https://hrutxtcgsojpphrbvngw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydXR4dGNnc29qcHBocmJ2bmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMjIxNDcsImV4cCI6MjEwNzY5ODE0N30.fZG4iTmOS5t_KU_ro1OgDnhJ2_90UKDHKVKefM6QYlY";
 const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_") && window.supabase;
 const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;

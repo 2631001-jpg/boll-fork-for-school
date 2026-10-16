@@ -45,6 +45,9 @@ textarea{resize:vertical;min-height:110px}
 .meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;flex-wrap:wrap}
 .avatar{width:30px;height:30px;border-radius:10px;background:#302b50;color:#c8c0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
 .tag{font-size:11px;border:1px solid #393456;background:#24213a;color:#c3baff;border-radius:6px;padding:3px 7px}
+.role-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:800;line-height:1.4;border-radius:5px;padding:2px 6px;border:1px solid #394154;background:#202633;color:#b9c3d5}
+.role-badge.moderator{border-color:#246a67;background:#12302f;color:#8ce4d6}
+.role-badge.admin{border-color:#6552a7;background:#2a2147;color:#d2c5ff}
 .post h2{font-size:18px;line-height:1.4;margin:13px 0 7px;letter-spacing:-.3px}
 .postbody{color:#c4cada;white-space:pre-wrap;overflow-wrap:anywhere}
 .postimg{max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px;border:1px solid var(--line)}
@@ -221,7 +224,7 @@ async function refresh(){
 
  // 수정: 작성자 프로필 관계를 외래 키 이름으로 명시
  const {data,error}=await db.from("posts")
-  .select("id,title,body,category,created_at,updated_at,user_id,image_url,is_pinned,profiles!posts_user_id_fkey(nickname),likes(count),comments(count)")
+  .select("id,title,body,category,created_at,updated_at,user_id,image_url,is_pinned,profiles!posts_user_id_fkey(nickname,role),likes(count),comments(count)")
   .eq("is_hidden",false)
   .in("category",["자유","공지"])
   .order("created_at",{ascending:false})
@@ -254,7 +257,7 @@ function render(){
   $("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">글 작성하기</button></div>';
   const b=$("emptyWrite");if(b)b.onclick=openWriter;
  }else{
-  $("feed").innerHTML=pageItems.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.is_pinned?'<span class="tag">📌 고정</span>':''}${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")&&(p.category!=="공지"||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}${profile?.role==="admin"&&p.category==="공지"?`<button data-pin="${p.id}">${p.is_pinned?"📌 고정 해제":"📌 상단 고정"}</button>`:""}</div></article>`).join("");
+  $("feed").innerHTML=pageItems.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span class="role-badge ${p.profiles?.role==="admin"?"admin":(["moderator","staff","mod"].includes(p.profiles?.role)?"moderator":"")}">${p.profiles?.role==="admin"?"관리자":(["moderator","staff","mod"].includes(p.profiles?.role)?"어드민":"사용자")}</span><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.is_pinned?'<span class="tag">📌 고정</span>':''}${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")&&(p.category!=="공지"||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}${profile?.role==="admin"&&p.category==="공지"?`<button data-pin="${p.id}">${p.is_pinned?"📌 고정 해제":"📌 상단 고정"}</button>`:""}</div></article>`).join("");
   $("feed").querySelectorAll("[data-post-open]").forEach(card=>{card.style.cursor="pointer";card.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openDetail(card.dataset.postOpen)};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,a,input,textarea,select")){e.preventDefault();openDetail(card.dataset.postOpen)}}});
   $("feed").querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
   $("feed").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));

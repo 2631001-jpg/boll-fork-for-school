@@ -31,6 +31,9 @@ textarea{resize:vertical;min-height:110px}
 .page-info{font-size:12px;color:var(--muted)}
 .userbox{display:flex;gap:8px;align-items:center}
 .layout{display:grid;grid-template-columns:220px minmax(0,1fr) 240px;gap:22px;padding-top:26px;padding-bottom:60px}
+.leftcol{position:sticky;top:90px;align-self:start;max-height:calc(100vh - 105px);overflow-y:auto;scrollbar-width:thin}
+#mainMenu{margin-top:8px}
+#mainMenu button{width:100%}
 .panel{background:linear-gradient(160deg,#171c29,#11151e);border:1px solid var(--line);border-radius:16px;padding:17px}
 .side-title{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:1px;margin:3px 8px 12px}
 .nav{display:flex;flex-direction:column;gap:5px}
@@ -87,9 +90,13 @@ textarea{resize:vertical;min-height:110px}
 .bottom-tools{margin-top:14px}
 .userbox{margin-left:auto;gap:5px}
 .userbox button{padding:7px 8px;font-size:12px}
-.layout{display:block;padding-top:15px}
-.leftcol{margin-bottom:14px}
+.layout{display:block;padding-top:15px;padding-bottom:95px}
+.leftcol{position:static;max-height:none;overflow:visible;margin-bottom:14px}
 .leftcol .panel{padding:10px}
+#categories,.leftcol>.panel>.side-title:first-child{display:none}
+#mainMenu{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;padding:8px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));background:#10141ff5;border-top:1px solid var(--line);backdrop-filter:blur(14px);margin:0}
+#mainMenu button{min-width:0;text-align:center;white-space:normal;font-size:11px;line-height:1.25;padding:9px 2px;border-radius:8px}
+#mainMenu button.active{background:#25233c;color:white;border-color:#38345d}
 .side-title{display:none}
 .nav{flex-direction:row;overflow:auto}
 .nav button{white-space:nowrap;padding:8px 10px}
@@ -184,7 +191,7 @@ textarea{resize:vertical;min-height:110px}
 <div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
 <div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
-<div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="inviteRoomArea" class="hidden"><h3>회원 초대</h3><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">개발자만 초대할 수 있어요.</p></div><div class="section-head"><h3 id="activeRoomTitle">채팅방</h3><button id="refreshChatBtn">새로고침</button></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div></div></div>
+<div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">관리자 또는 개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 관리자/개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="inviteRoomArea" class="hidden"><h3>회원 초대</h3><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">개발자만 초대할 수 있어요.</p></div><div class="section-head"><h3 id="activeRoomTitle">채팅방</h3><button id="refreshChatBtn">새로고침</button></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
 <script>
@@ -470,7 +477,7 @@ let activeChatRoom=null;
 async function openGroupChat(){
  if(!requireUser())return;
  show("groupChatModal");
- $("createRoomArea").classList.toggle("hidden",profile?.role!=="developer");
+ $("createRoomArea").classList.toggle("hidden",!(["developer","admin"].includes(profile?.role)));
  $("activeChatArea").classList.add("hidden");
  await loadChatRooms();
 }
@@ -491,11 +498,11 @@ async function enterChatRoom(id){
  const {data:room,error}=await db.from("chat_rooms").select("id,name").eq("id",id).single();
  if(error){toast("채팅방 입장 실패: "+error.message);return}
  activeChatRoom=room;$("activeRoomTitle").textContent=room.name;$("activeChatArea").classList.remove("hidden");
- $("inviteRoomArea").classList.toggle("hidden",profile?.role!=="developer");
+ $("inviteRoomArea").classList.toggle("hidden",!(["developer","admin"].includes(profile?.role)));
  await loadChatMessages();
 }
 async function inviteToRoom(){
- if(profile?.role!=="developer"||!activeChatRoom){toast("개발자만 회원을 초대할 수 있어요.");return}
+ if(!(["developer","admin"].includes(profile?.role))||!activeChatRoom){toast("관리자 또는 개발자만 회원을 초대할 수 있어요.");return}
  const nickname=$("inviteNickname").value.trim();if(!nickname){toast("초대할 회원 닉네임을 입력해 주세요.");return}
  const {data:target,error:findError}=await db.from("profiles").select("id,nickname").ilike("nickname",nickname).limit(1).maybeSingle();
  if(findError||!target){toast("해당 닉네임의 회원을 찾지 못했어요.");return}
@@ -512,7 +519,7 @@ async function loadChatMessages(){
  el.scrollTop=el.scrollHeight;
 }
 async function createChatRoom(){
- if(profile?.role!=="developer"){toast("개발자만 채팅방을 만들 수 있어요.");return}
+ if(!(["developer","admin"].includes(profile?.role))){toast("관리자 또는 개발자만 채팅방을 만들 수 있어요.");return}
  const name=$("newRoomName").value.trim();if(!name){toast("채팅방 이름을 입력해 주세요.");return}
  const {data:room,error}=await db.from("chat_rooms").insert({name,created_by:user.id}).select("id,name").single();
  if(error){toast("채팅방 생성 실패: "+error.message);return}

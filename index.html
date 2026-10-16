@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>모여 — 자유 커뮤니티</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#0b0d12;--panel:#131722;--panel2:#191f2d;--line:#272e3e;--text:#edf0f7;--muted:#929bb0;--accent:#8b7cff;--accent2:#b0a6ff;--danger:#ff657a;--good:#6ee7b7}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% -10%,#252044 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Noto Sans KR",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--panel2);color:var(--text)}button:hover{border-color:var(--accent)}button.primary{background:var(--accent);border-color:var(--accent);color:white;font-weight:700}button.danger{color:var(--danger)}input,textarea,select{width:100%;background:#0d111a;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;outline:none}input:focus,textarea:focus,select:focus{border-color:var(--accent)}textarea{resize:vertical;min-height:110px}.wrap{max-width:1180px;margin:auto;padding:0 20px}.top{position:sticky;top:0;z-index:5;background:#0b0d12eF;backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}.topin{height:72px;display:flex;align-items:center;gap:18px}.brand{font-size:23px;font-weight:900;letter-spacing:-1px;color:white}.brand span{color:var(--accent)}.search{max-width:430px;margin-left:auto}.userbox{display:flex;gap:8px;align-items:center}.layout{display:grid;grid-template-columns:220px minmax(0,1fr) 240px;gap:22px;padding-top:26px;padding-bottom:60px}.panel{background:linear-gradient(160deg,#171c29,#11151e);border:1px solid var(--line);border-radius:16px;padding:17px}.side-title{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:1px;margin:3px 8px 12px}.nav{display:flex;flex-direction:column;gap:5px}.nav button{text-align:left;background:transparent;border-color:transparent;color:var(--muted)}.nav button.active,.nav button:hover{background:#25233c;color:white;border-color:#38345d}.small{font-size:12px;color:var(--muted)}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 16px}.section-head h1{font-size:24px;letter-spacing:-.7px;margin:0}.feed{display:flex;flex-direction:column;gap:12px}.post{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:19px;transition:border .15s}.post:hover{border-color:#45405f}.meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;flex-wrap:wrap}.avatar{width:30px;height:30px;border-radius:10px;background:#302b50;color:#c8c0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:800}.tag{font-size:11px;border:1px solid #393456;background:#24213a;color:#c3baff;border-radius:6px;padding:3px 7px}.post h2{font-size:18px;line-height:1.4;margin:13px 0 7px;letter-spacing:-.3px}.postbody{color:#c4cada;white-space:pre-wrap;overflow-wrap:anywhere}.postimg{max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px;border:1px solid var(--line)}.actions{display:flex;gap:8px;align-items:center;margin-top:15px;flex-wrap:wrap}.actions button{font-size:12px;padding:6px 10px}.liked{color:#c3baff;border-color:var(--accent)}.empty{padding:45px 15px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:15px}.rightstack{display:flex;flex-direction:column;gap:14px}.stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.stat:last-child{border:0}.modalback{position:fixed;inset:0;background:#000a;z-index:20;display:none;align-items:center;justify-content:center;padding:16px}.modalback.show{display:flex}.modal{width:min(650px,100%);max-height:90vh;overflow:auto;background:#121722;border:1px solid #333b50;border-radius:18px;padding:22px;box-shadow:0 25px 90px #0009}.modal h2{margin:0 0 16px}.field{margin:12px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.row{display:flex;gap:8px}.row>*{flex:1}.notice{padding:11px 13px;border-radius:10px;background:#1b2433;color:#bdc7db;font-size:13px;margin-bottom:14px}.comments{margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}.comment{padding:10px 0 10px 12px;border-left:2px solid #34304f;margin-top:10px}.comment p{margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}.commentchildren{margin-left:20px}.hidden{display:none!important}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#24283a;border:1px solid #4a4e65;border-radius:12px;padding:12px 18px;z-index:50;max-width:90vw}.footer{color:var(--muted);font-size:11px;margin-top:18px}.mobilecats{display:none}
+@media(max-width:950px){.layout{grid-template-columns:190px minmax(0,1fr)}.rightcol{display:none}}
+@media(max-width:650px){.wrap{padding:0 12px}.topin{height:auto;min-height:65px;flex-wrap:wrap;padding:10px 0;gap:10px}.brand{font-size:21px}.search{order:3;max-width:none;flex-basis:100%}.userbox{margin-left:auto}.layout{display:block;padding-top:15px}.leftcol{margin-bottom:14px}.leftcol .panel{padding:10px}.side-title{display:none}.nav{flex-direction:row;overflow:auto}.nav button{white-space:nowrap;padding:8px 10px}.section-head h1{font-size:21px}.post{padding:15px}.post h2{font-size:17px}.mobilecats{display:block;margin-bottom:14px}.authlabel{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap topin">
+  <div class="brand">모여<span>.</span></div>
+  <input id="search" class="search" placeholder="게시글 검색..." aria-label="게시글 검색">
+  <div class="userbox"><span id="who" class="small authlabel">로그인하지 않음</span><button id="adminBtn" class="hidden">신고함</button><button id="authBtn" class="primary">로그인</button></div>
+</div></header>
+<div class="wrap layout">
+<aside class="leftcol"><div class="panel">
+  <div class="side-title">게시판</div><nav class="nav" id="categories">
+  <button class="active" data-cat="전체">✦ 전체 글</button><button data-cat="자유">☰ 자유게시판</button><button data-cat="질문">? 질문</button><button data-cat="정보">▤ 정보·팁</button><button data-cat="유머">☻ 유머</button><button data-cat="일상">☼ 일상</button>
+  </nav>
+  <div style="margin-top:18px"><button id="writeBtn" class="primary" style="width:100%">＋ 글쓰기</button></div>
+  <p class="footer">서로 존중하며 편하게 이야기해요.</p>
+</div></aside>
+<main>
+  <div class="mobilecats panel mobilecats"><div class="nav" id="mobileCategories">
+  <button class="active" data-cat="전체">전체</button><button data-cat="자유">자유</button><button data-cat="질문">질문</button><button data-cat="정보">정보</button><button data-cat="유머">유머</button><button data-cat="일상">일상</button>
+  </div></div>
+  <div class="section-head"><h1 id="feedTitle">전체 글</h1><select id="sort" style="width:auto;max-width:145px"><option value="new">최신순</option><option value="hot">인기순</option></select></div>
+  <div id="feed" class="feed"><div class="empty">커뮤니티에 연결하는 중...</div></div>
+</main>
+<aside class="rightcol"><div class="rightstack">
+  <div class="panel"><div class="side-title">커뮤니티 현황</div><div class="stat"><span class="small">표시 중인 글</span><b id="postCount">—</b></div><div class="stat"><span class="small">내 계정</span><b id="accountStatus">게스트</b></div></div>
+  <div class="panel"><div class="side-title">처음 오셨나요?</div><p style="margin:0 0 12px">계정을 만들면 글과 댓글을 작성하고 추천할 수 있어요.</p><button id="joinBtn" class="primary" style="width:100%">가입 / 로그인</button></div>
+  <div class="panel"><div class="side-title">안내</div><p class="small">비밀번호를 다른 곳과 공유하지 마세요. 개인정보나 민감한 정보를 게시하지 말고, 문제 있는 게시물은 신고해 주세요.</p></div>
+</div></aside>
+</div>
+
+<div class="modalback" id="authModal"><div class="modal"><div class="section-head"><h2 id="authTitle">로그인</h2><button data-close="authModal">닫기</button></div><div class="notice">이메일 인증 설정에 따라 가입 후 메일 확인이 필요할 수 있어요.</div>
+<div class="field"><label>이메일</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+<div class="field"><label>비밀번호 (8자 이상 권장)</label><input id="password" type="password" autocomplete="current-password" placeholder="비밀번호"></div>
+<div class="field" id="nicknameField"><label>닉네임 (가입 시)</label><input id="nickname" maxlength="24" placeholder="커뮤니티에서 사용할 닉네임"></div>
+<div class="row"><button id="loginSubmit" class="primary">로그인</button><button id="signupSubmit">회원가입</button></div><p class="small">로그인 후 프로필에서 닉네임을 바꿀 수 있어요.</p></div></div>
+
+<div class="modalback" id="writeModal"><div class="modal"><div class="section-head"><h2 id="writeTitle">새 글 작성</h2><button data-close="writeModal">닫기</button></div>
+<div class="field"><label>게시판</label><select id="postCategory"><option>자유</option><option>질문</option><option>정보</option><option>유머</option><option>일상</option></select></div>
+<div class="field"><label>제목</label><input id="postTitle" maxlength="160" placeholder="제목을 입력하세요"></div>
+<div class="field"><label>내용</label><textarea id="postBody" maxlength="15000" placeholder="편하게 이야기를 나눠보세요."></textarea></div>
+<div class="field"><label>이미지 첨부 (이미지 파일 1개, 최대 5MB)</label><input id="postImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div>
+<div class="row"><button id="publishBtn" class="primary">게시하기</button><button data-close="writeModal">취소</button></div></div></div>
+
+<div class="modalback" id="profileModal"><div class="modal"><div class="section-head"><h2>내 프로필</h2><button data-close="profileModal">닫기</button></div><div class="field"><label>닉네임</label><input id="profileNick" maxlength="24"></div><button id="saveProfile" class="primary">저장</button> <button id="logoutBtn">로그아웃</button><p class="small">계정 이메일: <span id="profileEmail"></span></p></div></div>
+<div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
+<div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
+<div id="toast" class="toast hidden" role="status"></div>
+<script>
+(() => {
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_") && window.supabase;
+const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let user=null, profile=null, currentCat="전체", posts=[], editingId=null, openedPost=null, likedIds=new Set();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const show=(id)=>$(id).classList.add("show"), hide=(id)=>$(id).classList.remove("show");
+function toast(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),3200)}
+function requireDb(){if(!db){toast("먼저 README의 Supabase 설정을 완료해 주세요.");return false}return true}
+function requireUser(){if(!user){show("authModal");return false}return true}
+function timeAgo(d){const ms=Date.now()-new Date(d).getTime(),m=Math.floor(ms/60000);if(m<1)return"방금 전";if(m<60)return m+"분 전";if(m<1440)return Math.floor(m/60)+"시간 전";return Math.floor(m/1440)+"일 전"}
+function initials(n){return esc((n||"?").trim().slice(0,1).toUpperCase())}
+async function loadProfile(){if(!user){profile=null;return}const {data}=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();profile=data}
+async function refresh(){
+ if(!requireDb()){$("feed").innerHTML='<div class="empty">설정이 거의 끝났어요.<br>압축 파일의 README를 따라 Supabase 키를 입력해 주세요.</div>';return}
+ const {data:auth}=await db.auth.getUser();user=auth?.user||null;await loadProfile();
+ $("who").textContent=user?(profile?.nickname||user.email?.split("@")[0]||"회원"):"로그인하지 않음";
+ $("authBtn").textContent=user?"내 프로필":"로그인";$("accountStatus").textContent=user?(profile?.role==="admin"?"관리자":"회원"):"게스트";
+ $("joinBtn").textContent=user?"내 프로필":"가입 / 로그인";$("adminBtn").classList.toggle("hidden",profile?.role!=="admin");
+ if(user){const {data}=await db.from("likes").select("post_id").eq("user_id",user.id);likedIds=new Set((data||[]).map(x=>x.post_id))}
+ const {data,error}=await db.from("posts").select("id,title,body,category,created_at,updated_at,user_id,image_url,profiles(nickname),likes(count),comments(count)").eq("is_hidden",false).order("created_at",{ascending:false}).limit(150);
+ if(error){$("feed").innerHTML='<div class="empty">게시글을 불러오지 못했어요. SQL 정책과 Supabase 설정을 확인해 주세요.<br><span class="small">'+esc(error.message)+'</span></div>';return}
+ posts=data||[];render()
+}
+function render(){
+ const q=$("search").value.trim().toLowerCase(), sort=$("sort").value;
+ let arr=posts.filter(p=>(currentCat==="전체"||p.category===currentCat)&&(!q||(p.title+" "+p.body+" "+(p.profiles?.nickname||"")).toLowerCase().includes(q)));
+ if(sort==="hot")arr.sort((a,b)=>((b.likes?.[0]?.count||0)*3+(b.comments?.[0]?.count||0))-((a.likes?.[0]?.count||0)*3+(a.comments?.[0]?.count||0)));
+ $("feedTitle").textContent=currentCat==="전체"?"전체 글":currentCat+" 게시판";$("postCount").textContent=arr.length+"개";
+ if(!arr.length){$("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">첫 글 작성하기</button></div>';const b=$("emptyWrite");if(b)b.onclick=openWriter;return}
+ $("feed").innerHTML=arr.map(p=>`<article class="post"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}</div></article>`).join("");
+ $("feed").querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
+ $("feed").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
+ $("feed").querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>report(b.dataset.report));
+ $("feed").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editPost(b.dataset.edit));
+ $("feed").querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deletePost(b.dataset.delete));
+}
+function openWriter(){if(!requireUser())return;editingId=null;$("writeTitle").textContent="새 글 작성";$("publishBtn").textContent="게시하기";$("postCategory").value=currentCat==="전체"?"자유":currentCat;$("postTitle").value="";$("postBody").value="";$("postImage").value="";show("writeModal")}
+function editPost(id){const p=posts.find(x=>x.id===id);if(!p)return;editingId=id;$("writeTitle").textContent="게시글 수정";$("publishBtn").textContent="수정 저장";$("postCategory").value=p.category;$("postTitle").value=p.title;$("postBody").value=p.body;$("postImage").value="";show("writeModal")}
+async function uploadImage(file){
+ if(!file)return null;if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type)||file.size>5*1024*1024)throw Error("이미지는 PNG/JPG/WEBP/GIF, 5MB 이하만 가능해요.");
+ const ext=({ "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"})[file.type];
+ const path=`${user.id}/${crypto.randomUUID()}.${ext}`;
+ const {error}=await db.storage.from("post-images").upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;
+ const {data}=db.storage.from("post-images").getPublicUrl(path);return data.publicUrl
+}
+$("publishBtn").onclick=async()=>{
+ if(!requireUser())return;const title=$("postTitle").value.trim(),body=$("postBody").value.trim();if(!title||!body){toast("제목과 내용을 입력해 주세요.");return}
+ const b=$("publishBtn");b.disabled=true;b.textContent="저장 중...";
+ try{let image_url=null;const file=$("postImage").files[0];if(file)image_url=await uploadImage(file);
+ if(editingId){const patch={title,body,category:$("postCategory").value,updated_at:new Date().toISOString()};if(image_url)patch.image_url=image_url;const {error}=await db.from("posts").update(patch).eq("id",editingId);if(error)throw error}
+ else{const {error}=await db.from("posts").insert({user_id:user.id,title,body,category:$("postCategory").value,image_url});if(error)throw error}
+ hide("writeModal");toast("저장했어요.");await refresh()
+ }catch(e){toast("저장 실패: "+e.message)}finally{b.disabled=false;b.textContent=editingId?"수정 저장":"게시하기"}
+};
+async function deletePost(id){if(!requireUser()||!confirm("이 게시글을 삭제할까요?"))return;const {error}=await db.from("posts").delete().eq("id",id);if(error)toast("삭제 실패: "+error.message);else{toast("삭제했어요.");await refresh()}}
+async function toggleLike(id){if(!requireUser())return;const exists=likedIds.has(id);let r;if(exists)r=await db.from("likes").delete().eq("post_id",id).eq("user_id",user.id);else r=await db.from("likes").insert({post_id:id,user_id:user.id});if(r.error)toast("추천 처리 실패: "+r.error.message);else await refresh()}
+async function openDetail(id){
+ const p=posts.find(x=>x.id===id);if(!p)return;openedPost=p;
+ const {data:comments,error}=await db.from("comments").select("id,post_id,parent_id,body,created_at,user_id,profiles(nickname)").eq("post_id",id).eq("is_hidden",false).order("created_at",{ascending:true});
+ if(error){toast("댓글을 불러오지 못했어요.");return}
+ const renderComment=(c,depth=0)=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${esc(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${(comments||[]).filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x,depth+1)}</div>`).join("")}</div>`;
+ $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${comments?.length||0}</h3><div class="row"><input id="commentInput" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${(comments||[]).filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
+ $("sendComment").onclick=()=>sendComment(id,null);$("detailContent").querySelector("[data-detail-like]").onclick=()=>toggleLike(id);$("detailContent").querySelector("[data-detail-report]").onclick=()=>report(id);
+ $("detailContent").querySelectorAll("[data-reply]").forEach(b=>b.onclick=()=>{const c=(comments||[]).find(x=>x.id===b.dataset.reply);const inp=$("commentInput");inp.placeholder="답글 작성 중… (취소하려면 새로고침)";inp.dataset.parent=c.id;inp.focus()});
+ $("detailContent").querySelectorAll("[data-delcomment]").forEach(b=>b.onclick=async()=>{if(confirm("댓글을 삭제할까요?")){const r=await db.from("comments").delete().eq("id",b.dataset.delcomment);if(r.error)toast(r.error.message);else openDetail(id)}});
+ show("detailModal")
+}
+async function sendComment(postId,parentId){if(!requireUser())return;const body=$("commentInput").value.trim();if(!body)return;const parent=$("commentInput").dataset.parent||parentId;const {error}=await db.from("comments").insert({post_id:postId,user_id:user.id,parent_id:parent||null,body});if(error)toast("댓글 등록 실패: "+error.message);else{await refresh();await openDetail(postId)}}
+async function report(postId){if(!requireUser())return;const reason=prompt("신고 사유를 간단히 입력해 주세요.");if(!reason?.trim())return;const {error}=await db.from("reports").insert({post_id:postId,reporter_id:user.id,reason:reason.trim().slice(0,1000)});toast(error?"신고 실패: "+error.message:"신고가 접수됐어요.")}
+async function openAdmin(){if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}const {data,error}=await db.from("reports").select("id,post_id,reporter_id,reason,status,created_at,posts(title)").order("created_at",{ascending:false}).limit(100);if(error){toast("신고함 로딩 실패: "+error.message);return}const el=$("reportsList");el.innerHTML=(data||[]).map(r=>`<div class="post" style="margin:10px 0"><div class="meta"><b>${esc(r.status)}</b><span>${timeAgo(r.created_at)}</span></div><p><b>게시글:</b> ${esc(r.posts?.title||"(삭제된 게시글)")}</p><p>${esc(r.reason)}</p><div class="actions"><button data-status="${r.id}" data-value="reviewed">검토 완료</button><button data-status="${r.id}" data-value="dismissed">기각</button></div></div>`).join("")||'<div class="empty">접수된 신고가 없어요.</div>';el.querySelectorAll("[data-status]").forEach(b=>b.onclick=async()=>{const {error}=await db.from("reports").update({status:b.dataset.value}).eq("id",b.dataset.status);if(error)toast(error.message);else{toast("신고 상태를 변경했어요.");openAdmin()}});show("adminModal")}
+$("authBtn").onclick=()=>user?openProfile():show("authModal");$("joinBtn").onclick=()=>user?openProfile():show("authModal");$("adminBtn").onclick=openAdmin;
+function openProfile(){$("profileNick").value=profile?.nickname||"";$("profileEmail").textContent=user?.email||"";show("profileModal")}
+$("loginSubmit").onclick=async()=>{if(!requireDb())return;const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)toast(error.message);else{hide("authModal");toast("로그인했어요.");await refresh()}};
+$("signupSubmit").onclick=async()=>{if(!requireDb())return;const nickname=$("nickname").value.trim();if(!nickname){toast("가입할 닉네임을 입력해 주세요.");return}const {data,error}=await db.auth.signUp({email:$("email").value.trim(),password:$("password").value,options:{data:{nickname}}});if(error)toast(error.message);else{hide("authModal");toast(data.session?"가입 완료!":"가입 요청 완료. 이메일을 확인해 주세요.");await refresh()}};
+$("saveProfile").onclick=async()=>{const nickname=$("profileNick").value.trim();if(!nickname||nickname.length>24){toast("닉네임은 1~24자로 입력해 주세요.");return}const {error}=await db.from("profiles").update({nickname}).eq("id",user.id);if(error)toast(error.message);else{toast("프로필을 저장했어요.");hide("profileModal");await refresh()}};
+$("logoutBtn").onclick=async()=>{await db.auth.signOut();hide("profileModal");await refresh();toast("로그아웃했어요.")};
+$("writeBtn").onclick=openWriter;
+$("search").oninput=render;$("sort").onchange=render;
+function setCat(cat){currentCat=cat;document.querySelectorAll("[data-cat]").forEach(b=>b.classList.toggle("active",b.dataset.cat===cat));render()}
+document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>setCat(b.dataset.cat));
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>hide(b.dataset.close));
+document.querySelectorAll(".modalback").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)hide(m.id)}));
+if(db){db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh()}else refresh();
+})();
+</script>
+</body></html>

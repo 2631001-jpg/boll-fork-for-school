@@ -209,14 +209,13 @@ async function refresh(){
  $("joinBtn").textContent=user?"내 프로필":"가입 / 로그인";
  $("adminBtn").classList.toggle("hidden",profile?.role!=="admin");
  if(user){
-  const {data,error:likeError}=await db.from("likes").select("post_id").eq("user_id",user.id);
+  const {data}=await db.from("likes").select("post_id").eq("user_id",user.id);
   likedIds=new Set((data||[]).map(x=>x.post_id));
-  if(likeError) console.warn("내 추천 목록을 불러오지 못했습니다:",likeError.message);
  }else likedIds=new Set();
 
- // 게시글을 먼저 불러와 추천/댓글 테이블 권한 오류가 목록 표시를 막지 않게 함
+ // 수정: 작성자 프로필 관계를 외래 키 이름으로 명시
  const {data,error}=await db.from("posts")
-  .select("id,title,body,category,created_at,updated_at,user_id,image_url")
+  .select("id,title,body,category,created_at,updated_at,user_id,image_url,profiles!posts_user_id_fkey(nickname),likes(count),comments(count)")
   .eq("is_hidden",false)
   .order("created_at",{ascending:false})
   .limit(150);
@@ -225,28 +224,7 @@ async function refresh(){
   $("feed").innerHTML='<div class="empty">게시글을 불러오지 못했어요.<br><span class="small">'+esc(error.message)+'</span></div>';
   return;
  }
-
- posts=(data||[]).map(p=>({...p,profiles:null,likes:[{count:0}],comments:[{count:0}]}));
- const userIds=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
- if(userIds.length){
-  const {data:profilesData,error:profileError}=await db.from("profiles").select("id,nickname").in("id",userIds);
-  if(profileError) console.warn("작성자 닉네임을 불러오지 못했습니다:",profileError.message);
-  const profileMap=new Map((profilesData||[]).map(x=>[x.id,x]));
-  posts=posts.map(p=>({...p,profiles:profileMap.get(p.user_id)||null}));
- }
- // 안전한 RPC로 추천/댓글 수만 가져옵니다. 개별 사용자 정보는 공개하지 않습니다.
- if(posts.length){
-  const {data:counts,error:countsError}=await db.rpc("get_post_engagement_counts",{post_ids:posts.map(p=>p.id)});
-  if(countsError){
-   console.warn("추천/댓글 수 조회 실패:",countsError.message);
-  }else{
-   const countMap=new Map((counts||[]).map(x=>[x.post_id,x]));
-   posts=posts.map(p=>{
-    const c=countMap.get(p.id);
-    return {...p,likes:[{count:Number(c?.likes_count||0)}],comments:[{count:Number(c?.comments_count||0)}]};
-   });
-  }
- }
+ posts=data||[];
  render();
 }
 
@@ -260,7 +238,12 @@ function render(){
   $("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">첫 글 작성하기</button></div>';
   const b=$("emptyWrite");if(b)b.onclick=openWriter;return;
  }
- $("feed").innerHTML=arr.map(p=>`<article class="post"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}</div></article>`).join("");
+ $("feed").innerHTML=arr.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}</div></article>`).join("");
+ $("feed").querySelectorAll("[data-post-open]").forEach(card=>{
+  card.style.cursor="pointer";
+  card.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openDetail(card.dataset.postOpen)};
+  card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,a,input,textarea,select")){e.preventDefault();openDetail(card.dataset.postOpen)}};
+ });
  $("feed").querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
  $("feed").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
  $("feed").querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>report(b.dataset.report));
@@ -337,9 +320,10 @@ async function openDetail(id){
   .eq("is_hidden",false)
   .order("created_at",{ascending:true});
 
- if(error){toast("댓글을 불러오지 못했어요: "+error.message);return}
- const renderComment=c=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${esc(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${(comments||[]).filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x)}</div>`).join("")}</div>`;
- $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${comments?.length||0}</h3><div class="row"><input id="commentInput" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${(comments||[]).filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
+ if(error){toast("게시글은 열었지만 댓글을 불러오지 못했어요: "+error.message)}
+ const safeComments=error?[]:(comments||[]);
+ const renderComment=c=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${esc(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${safeComments.filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x)}</div>`).join("")}</div>`;
+ $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${safeComments.length}</h3><div class="row"><input id="commentInput" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${safeComments.filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
  $("sendComment").onclick=()=>sendComment(id,null);
  $("detailContent").querySelector("[data-detail-like]").onclick=()=>toggleLike(id);
  $("detailContent").querySelector("[data-detail-report]").onclick=()=>report(id);

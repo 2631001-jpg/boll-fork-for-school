@@ -49,7 +49,7 @@ textarea{resize:vertical;min-height:110px}
 .role-badge.moderator{border-color:#246a67;background:#12302f;color:#8ce4d6}
 .role-badge.admin{border-color:#6552a7;background:#2a2147;color:#d2c5ff}
 .post h2{font-size:18px;line-height:1.4;margin:13px 0 7px;letter-spacing:-.3px}
-.postbody{color:#c4cada;white-space:pre-wrap;overflow-wrap:anywhere}
+.postbody{color:#c4cada;white-space:pre-wrap;overflow-wrap:anywhere}.postbody a,.comment a{color:#b0a6ff;text-decoration:underline;overflow-wrap:anywhere}.chat-messages{height:42vh;min-height:220px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px;margin:12px 0;background:#0d111a}.chat-message{padding:8px 0;border-bottom:1px solid var(--line)}
 .postimg{max-width:100%;max-height:420px;object-fit:contain;border-radius:12px;margin-top:12px;border:1px solid var(--line)}
 .actions{display:flex;gap:8px;align-items:center;margin-top:15px;flex-wrap:wrap}
 .actions button{font-size:12px;padding:6px 10px}
@@ -108,7 +108,6 @@ textarea{resize:vertical;min-height:110px}
   <div class="userbox">
     <span id="who" class="small authlabel">로그인하지 않음</span>
     <button id="adminBtn" class="hidden">신고함</button>
-    <button id="friendsManageBtn">친구 관리</button>
     <button id="authBtn" class="primary">로그인</button>
   </div>
 </div></header>
@@ -119,6 +118,13 @@ textarea{resize:vertical;min-height:110px}
   <nav class="nav" id="categories">
   <button class="active" data-cat="자유">☰ 자유게시판</button>
   <button data-cat="공지">📌 공지사항</button>
+  </nav>
+  <div class="side-title" style="margin-top:20px">메뉴</div>
+  <nav class="nav" id="mainMenu">
+    <button id="menuBoards">▤ 게시판</button>
+    <button id="menuProfile">♙ 마이페이지</button>
+    <button id="menuChats">▣ 나의 채팅방</button>
+    <button id="menuFriends">♧ 친구</button>
   </nav>
   <div style="margin-top:18px"><button id="writeBtn" class="primary" style="width:100%">＋ 글쓰기</button></div>
   <p class="footer">서로 존중하며 편하게 이야기해요.</p>
@@ -178,6 +184,7 @@ textarea{resize:vertical;min-height:110px}
 <div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
 <div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
+<div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="inviteRoomArea" class="hidden"><h3>회원 초대</h3><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">개발자만 초대할 수 있어요.</p></div><div class="section-head"><h3 id="activeRoomTitle">채팅방</h3><button id="refreshChatBtn">새로고침</button></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
 <script>
@@ -192,6 +199,7 @@ let currentPage=1;
 const POSTS_PER_PAGE=10;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const linkify=s=>esc(s).replace(/(https?:\/\/[^\s<]+)/g, raw=>{const url=raw.replace(/[),.!?]+$/,"");const tail=raw.slice(url.length);return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${tail}`;});
 const show=id=>$(id).classList.add("show");
 const hide=id=>$(id).classList.remove("show");
 function toast(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),3200)}
@@ -259,7 +267,7 @@ function render(){
   $("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">글 작성하기</button></div>';
   const b=$("emptyWrite");if(b)b.onclick=openWriter;
  }else{
-  $("feed").innerHTML=pageItems.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span class="role-badge ${p.profiles?.role==="admin"?"admin":(["moderator","staff","mod"].includes(p.profiles?.role)?"moderator":"")}">${p.profiles?.role==="admin"?"관리자":(["moderator","staff","mod"].includes(p.profiles?.role)?"어드민":"사용자")}</span><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.is_pinned?'<span class="tag">📌 고정</span>':''}${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")&&(p.category!=="공지"||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}${profile?.role==="admin"&&p.category==="공지"?`<button data-pin="${p.id}">${p.is_pinned?"📌 고정 해제":"📌 상단 고정"}</button>`:""}</div></article>`).join("");
+  $("feed").innerHTML=pageItems.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span class="role-badge ${p.profiles?.role==="admin"?"admin":(["moderator","staff","mod"].includes(p.profiles?.role)?"moderator":"")}">${p.profiles?.role==="admin"?"관리자":(["moderator","staff","mod"].includes(p.profiles?.role)?"어드민":"사용자")}</span><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.is_pinned?'<span class="tag">📌 고정</span>':''}${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${linkify(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")&&(p.category!=="공지"||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}${profile?.role==="admin"&&p.category==="공지"?`<button data-pin="${p.id}">${p.is_pinned?"📌 고정 해제":"📌 상단 고정"}</button>`:""}</div></article>`).join("");
   $("feed").querySelectorAll("[data-post-open]").forEach(card=>{card.style.cursor="pointer";card.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openDetail(card.dataset.postOpen)};card.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("button,a,input,textarea,select")){e.preventDefault();openDetail(card.dataset.postOpen)}}});
   $("feed").querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>toggleLike(b.dataset.like));
   $("feed").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDetail(b.dataset.open));
@@ -363,8 +371,8 @@ async function openDetail(id){
 
  if(error){toast("게시글은 열었지만 댓글을 불러오지 못했어요: "+error.message)}
  const safeComments=error?[]:(comments||[]);
- const renderComment=c=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${esc(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${safeComments.filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x)}</div>`).join("")}</div>`;
- $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${safeComments.length}</h3><div class="row"><input id="commentInput" type="text" name="community-comment-entry" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${safeComments.filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
+ const renderComment=c=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${linkify(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${safeComments.filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x)}</div>`).join("")}</div>`;
+ $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${linkify(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${safeComments.length}</h3><div class="row"><input id="commentInput" type="text" name="community-comment-entry" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${safeComments.filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
  $("sendComment").onclick=()=>sendComment(id,null);
  $("detailContent").querySelector("[data-detail-like]").onclick=()=>toggleLike(id);
  $("detailContent").querySelector("[data-detail-report]").onclick=()=>report(id);
@@ -457,6 +465,70 @@ async function loadFriendLists(){
  listEl.innerHTML=friends.length?friends.map(r=>{const id=r.requester_id===user.id?r.addressee_id:r.requester_id;return `<div class="activity-item">${esc(names[id]||'회원')}</div>`}).join(''):'아직 친구가 없어요.';
 }
 
+
+let activeChatRoom=null;
+async function openGroupChat(){
+ if(!requireUser())return;
+ show("groupChatModal");
+ $("createRoomArea").classList.toggle("hidden",profile?.role!=="developer");
+ $("activeChatArea").classList.add("hidden");
+ await loadChatRooms();
+}
+async function loadChatRooms(){
+ const el=$("chatRoomsList");el.textContent="초대받은 채팅방을 불러오는 중...";
+ const {data:members,error}=await db.from("chat_room_members").select("room_id").eq("user_id",user.id);
+ if(error){el.textContent="채팅방 목록을 불러오지 못했어요: "+error.message+" (친구/채팅 SQL을 실행했는지 확인해 주세요.)";return}
+ const ids=(members||[]).map(m=>m.room_id);
+ if(!ids.length){el.innerHTML='<p class="small">초대받은 채팅방이 없어요.</p>';return}
+ const {data,error:roomError}=await db.from("chat_rooms").select("id,name,created_at").eq("is_archived",false).in("id",ids).order("created_at",{ascending:false});
+ if(roomError){el.textContent="채팅방을 불러오지 못했어요: "+roomError.message;return}
+ el.innerHTML=data?.length?data.map(r=>`<div class="activity-item"><div class="row" style="align-items:center"><b>${esc(r.name)}</b><button data-enter-room="${r.id}">입장</button></div></div>`).join(""):'<p class="small">초대받은 채팅방이 없어요.</p>';
+ el.querySelectorAll("[data-enter-room]").forEach(b=>b.onclick=()=>enterChatRoom(b.dataset.enterRoom));
+}
+async function enterChatRoom(id){
+ const {data:member,error:memberError}=await db.from("chat_room_members").select("room_id").eq("room_id",id).eq("user_id",user.id).maybeSingle();
+ if(memberError||!member){toast("개발자에게 초대를 받아야 입장할 수 있어요.");return}
+ const {data:room,error}=await db.from("chat_rooms").select("id,name").eq("id",id).single();
+ if(error){toast("채팅방 입장 실패: "+error.message);return}
+ activeChatRoom=room;$("activeRoomTitle").textContent=room.name;$("activeChatArea").classList.remove("hidden");
+ $("inviteRoomArea").classList.toggle("hidden",profile?.role!=="developer");
+ await loadChatMessages();
+}
+async function inviteToRoom(){
+ if(profile?.role!=="developer"||!activeChatRoom){toast("개발자만 회원을 초대할 수 있어요.");return}
+ const nickname=$("inviteNickname").value.trim();if(!nickname){toast("초대할 회원 닉네임을 입력해 주세요.");return}
+ const {data:target,error:findError}=await db.from("profiles").select("id,nickname").ilike("nickname",nickname).limit(1).maybeSingle();
+ if(findError||!target){toast("해당 닉네임의 회원을 찾지 못했어요.");return}
+ const {error}=await db.from("chat_room_members").insert({room_id:activeChatRoom.id,user_id:target.id,invited_by:user.id});
+ if(error){toast(error.code==="23505"?"이미 초대된 회원이에요.":"초대 실패: "+error.message);return}
+ $("inviteNickname").value="";toast((target.nickname||"회원")+"님을 초대했어요.");
+}
+async function loadChatMessages(){
+ if(!activeChatRoom)return;
+ const el=$("chatMessages");
+ const {data,error}=await db.from("chat_messages").select("id,room_id,user_id,body,created_at,profiles!chat_messages_user_id_fkey(nickname)").eq("room_id",activeChatRoom.id).order("created_at",{ascending:true}).limit(200);
+ if(error){el.textContent="메시지를 불러오지 못했어요: "+error.message;return}
+ el.innerHTML=data?.length?data.map(m=>`<div class="chat-message"><div class="meta"><b>${esc(m.profiles?.nickname||"회원")}</b><span>${timeAgo(m.created_at)}</span></div><div class="postbody">${linkify(m.body)}</div></div>`).join(""):'<p class="small">첫 메시지를 보내 보세요.</p>';
+ el.scrollTop=el.scrollHeight;
+}
+async function createChatRoom(){
+ if(profile?.role!=="developer"){toast("개발자만 채팅방을 만들 수 있어요.");return}
+ const name=$("newRoomName").value.trim();if(!name){toast("채팅방 이름을 입력해 주세요.");return}
+ const {data:room,error}=await db.from("chat_rooms").insert({name,created_by:user.id}).select("id,name").single();
+ if(error){toast("채팅방 생성 실패: "+error.message);return}
+ const {error:memberError}=await db.from("chat_room_members").insert({room_id:room.id,user_id:user.id,invited_by:user.id});
+ if(memberError){toast("방은 만들었지만 생성자 입장 권한 설정에 실패했어요: "+memberError.message);return}
+ $("newRoomName").value="";toast("채팅방을 만들었어요.");await loadChatRooms();
+
+}
+async function sendChatMessage(){
+ if(!requireUser()||!activeChatRoom)return;
+ const body=$("chatMessageInput").value.trim();if(!body)return;
+ const {error}=await db.from("chat_messages").insert({room_id:activeChatRoom.id,user_id:user.id,body});
+ if(error){toast("메시지 전송 실패: "+error.message);return}
+ $("chatMessageInput").value="";await loadChatMessages();
+}
+
 function openProfile(){
  if(!user){show("authModal");return}
  $("profileNick").value=profile?.nickname||"";
@@ -466,8 +538,16 @@ function openProfile(){
 }
 
 $("authBtn").onclick=()=>user?openProfile():show("authModal");
+$("menuBoards").onclick=()=>{document.querySelector("main").scrollIntoView({behavior:"smooth"});};
+$("menuProfile").onclick=openProfile;
+$("menuChats").onclick=openGroupChat;
+$("menuFriends").onclick=()=>user?openFriends():show("authModal");
 $("joinBtn").onclick=()=>user?openProfile():show("authModal");
-$("friendsManageBtn").onclick=()=>user?openFriends():show("authModal");
+$("inviteRoomBtn").onclick=inviteToRoom;
+$("createRoomBtn").onclick=createChatRoom;
+$("sendChatMessageBtn").onclick=sendChatMessage;
+$("refreshChatBtn").onclick=loadChatMessages;
+$("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendChatMessage()});
 $("adminBtn").onclick=openAdmin;
 $("friendsBtn").onclick=openFriends;
 $("userSearchBtn").onclick=searchUsers;

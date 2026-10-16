@@ -130,7 +130,7 @@ textarea{resize:vertical;min-height:110px}
   </div></div>
   <div class="section-head"><h1 id="feedTitle">전체 글</h1><select id="sort" style="width:auto;max-width:145px"><option value="new">최신순</option><option value="hot">인기순</option></select></div>
   <div id="feed" class="feed"><div class="empty">커뮤니티에 연결하는 중...</div></div>
-  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" placeholder="게시글 검색..." aria-label="게시글 검색"></div>
+  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" type="search" name="community-post-search" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="search" placeholder="게시글 검색..." aria-label="게시글 검색"></div>
 </main>
 
 <aside class="rightcol"><div class="rightstack">
@@ -153,8 +153,8 @@ textarea{resize:vertical;min-height:110px}
 <div class="modalback" id="writeModal"><div class="modal">
 <div class="section-head"><h2 id="writeTitle">새 글 작성</h2><button data-close="writeModal">닫기</button></div>
 <div class="field"><label>게시판</label><select id="postCategory"><option value="자유">자유게시판</option></select></div>
-<div class="field"><label>제목</label><input id="postTitle" maxlength="160" placeholder="제목을 입력하세요"></div>
-<div class="field"><label>내용</label><textarea id="postBody" maxlength="15000" placeholder="편하게 이야기를 나눠보세요."></textarea></div>
+<div class="field"><label>제목</label><input id="postTitle" type="text" name="community-post-title" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other" maxlength="160" placeholder="제목을 입력하세요"></div>
+<div class="field"><label>내용</label><textarea id="postBody" name="community-post-body" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other" maxlength="15000" placeholder="편하게 이야기를 나눠보세요."></textarea></div>
 <div class="field"><label>이미지 첨부 (이미지 파일 1개, 최대 5MB)</label><input id="postImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div>
 <div class="row"><button id="publishBtn" class="primary">게시하기</button><button data-close="writeModal">취소</button></div>
 </div></div>
@@ -322,7 +322,7 @@ $("publishBtn").onclick=async()=>{
    const {error}=await db.from("posts").insert({user_id:user.id,title,body,category:$("postCategory").value,image_url});
    if(error)throw error;
   }
-  hide("writeModal");toast("저장했어요.");await refresh();
+  hide("writeModal");$("postTitle").value="";$("postBody").value="";$("postImage").value="";toast("저장했어요.");await refresh();
  }catch(e){toast("저장 실패: "+e.message)}
  finally{b.disabled=false;$("publishBtn").textContent=editingId?"수정 저장":"게시하기"}
 };
@@ -362,7 +362,7 @@ async function openDetail(id){
  if(error){toast("게시글은 열었지만 댓글을 불러오지 못했어요: "+error.message)}
  const safeComments=error?[]:(comments||[]);
  const renderComment=c=>`<div class="comment"><div class="meta"><b>${esc(c.profiles?.nickname||"회원")}</b><span>· ${timeAgo(c.created_at)}</span></div><p>${esc(c.body)}</p><div class="actions"><button data-reply="${c.id}">답글</button>${user&&(user.id===c.user_id||profile?.role==="admin")?`<button class="danger" data-delcomment="${c.id}">삭제</button>`:""}</div>${safeComments.filter(x=>x.parent_id===c.id).map(x=>`<div class="commentchildren">${renderComment(x)}</div>`).join("")}</div>`;
- $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${safeComments.length}</h3><div class="row"><input id="commentInput" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${safeComments.filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
+ $("detailContent").innerHTML=`<div class="meta"><span class="tag">${esc(p.category)}</span><b>${esc(p.profiles?.nickname||"회원")}</b><span>${timeAgo(p.created_at)}</span></div><h2>${esc(p.title)}</h2><p class="postbody">${esc(p.body)}</p>${p.image_url?`<img class="postimg" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button data-detail-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-detail-report="${p.id}">신고</button></div><div class="comments"><h3>댓글 ${safeComments.length}</h3><div class="row"><input id="commentInput" type="text" name="community-comment-entry" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other" maxlength="3000" placeholder="댓글을 입력하세요"><button class="primary" id="sendComment">등록</button></div><div id="commentList">${safeComments.filter(c=>!c.parent_id).map(c=>renderComment(c)).join("")||'<p class="small">첫 댓글을 남겨보세요.</p>'}</div></div>`;
  $("sendComment").onclick=()=>sendComment(id,null);
  $("detailContent").querySelector("[data-detail-like]").onclick=()=>toggleLike(id);
  $("detailContent").querySelector("[data-detail-report]").onclick=()=>report(id);

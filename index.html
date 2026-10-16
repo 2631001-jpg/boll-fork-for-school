@@ -130,7 +130,7 @@ textarea{resize:vertical;min-height:110px}
   </div></div>
   <div class="section-head"><h1 id="feedTitle">전체 글</h1><select id="sort" style="width:auto;max-width:145px"><option value="new">최신순</option><option value="hot">인기순</option></select></div>
   <div id="feed" class="feed"><div class="empty">커뮤니티에 연결하는 중...</div></div>
-  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" type="search" name="site_query_7f3a" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" readonly placeholder="게시글 검색..." aria-label="게시글 검색"></div>
+  <div class="bottom-tools"><div id="pagination" class="pagination"></div><input id="search" class="bottom-search" type="search" name="community-search-query" role="searchbox" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" data-form-type="other" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" readonly placeholder="게시글 검색..." aria-label="게시글 검색"></div>
 </main>
 
 <aside class="rightcol"><div class="rightstack">
@@ -140,11 +140,11 @@ textarea{resize:vertical;min-height:110px}
 </div></aside>
 </div>
 
-<div class="modalback" id="authModal"><div class="modal">
+<div class="modalback" id="authModal"><div class="modal" role="form" autocomplete="on">
 <div class="section-head"><h2 id="authTitle">로그인</h2><button data-close="authModal">닫기</button></div>
 <div class="notice">이메일 인증 설정에 따라 가입 후 메일 확인이 필요할 수 있어요.</div>
-<div class="field"><label>이메일</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
-<div class="field"><label>비밀번호 (8자 이상 권장)</label><input id="password" type="password" autocomplete="current-password" placeholder="비밀번호"></div>
+<div class="field"><label>이메일</label><input id="email" type="email" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="you@example.com"></div>
+<div class="field"><label>비밀번호 (8자 이상 권장)</label><input id="password" type="password" name="password" autocomplete="current-password" placeholder="비밀번호"></div>
 <div class="field" id="nicknameField"><label>닉네임 (가입 시)</label><input id="nickname" maxlength="24" placeholder="커뮤니티에서 사용할 닉네임"></div>
 <div class="row"><button id="loginSubmit" class="primary">로그인</button><button id="signupSubmit">회원가입</button></div>
 <p class="small">로그인 후 마이페이지에서 닉네임을 바꿀 수 있어요.</p>
@@ -497,9 +497,9 @@ $("myCommentsBtn").onclick=async()=>{
 };
 
 $("writeBtn").onclick=openWriter;
-// 비밀번호 관리자가 검색창을 로그인 칸으로 오인하는 현상을 줄임
-$("search").addEventListener("pointerdown",()=>{$("search").removeAttribute("readonly");$("search").setAttribute("autocomplete","new-password")},{once:true});
-$("search").addEventListener("keydown",()=>{$("search").removeAttribute("readonly");$("search").setAttribute("autocomplete","new-password")},{once:true});
+// 검색창은 로그인 폼 바깥에 두고, 포커스 직전에 readonly만 해제해 비밀번호 관리자 오인을 줄임
+$("search").addEventListener("pointerdown",()=>{$("search").removeAttribute("readonly")},{once:true});
+$("search").addEventListener("keydown",()=>{$("search").removeAttribute("readonly")},{once:true});
 $("search").oninput=()=>{currentPage=1;render()};
 $("sort").onchange=()=>{currentPage=1;render()};
 function setCat(cat){

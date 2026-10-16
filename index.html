@@ -347,7 +347,7 @@ async function report(postId){
 }
 async function openAdmin(){
  if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
- const {data,error}=await db.from("reports").select("id,post_id,reporter_id,reason,status,created_at,posts(title)").order("created_at",{ascending:false}).limit(100);
+ const {data,error}=await db.from("reports").select("id,post_id,reporter_id,reason,status,created_at,posts(title)").neq("status","dismissed").order("created_at",{ascending:false}).limit(100);
  if(error){toast("신고함 로딩 실패: "+error.message);return}
  const el=$("reportsList");
  el.innerHTML=(data||[]).map(r=>`<div class="post" style="margin:10px 0"><div class="meta"><b>${esc(r.status)}</b><span>${timeAgo(r.created_at)}</span></div><p><b>게시글:</b> ${esc(r.posts?.title||"(삭제된 게시글)")}</p><p>${esc(r.reason)}</p><div class="actions"><button data-status="${r.id}" data-value="reviewed">검토 완료</button><button data-status="${r.id}" data-value="dismissed">기각</button></div></div>`).join("")||'<div class="empty">접수된 신고가 없어요.</div>';

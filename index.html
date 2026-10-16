@@ -175,7 +175,7 @@ textarea{resize:vertical;min-height:110px}
 <button id="logoutBtn" class="danger">로그아웃</button>
 </div></div>
 
-<div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
+<div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
 <div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
@@ -445,15 +445,16 @@ async function searchUsers(){
  el.querySelectorAll('[data-friend-accept]').forEach(b=>b.onclick=async()=>{const {error}=await db.from('friendships').update({status:'accepted'}).eq('id',b.dataset.friendAccept).eq('addressee_id',user.id);if(error)toast('요청 수락 실패: '+error.message);else{toast('친구가 되었어요.');await searchUsers();await loadFriendLists()}});
 }
 async function loadFriendLists(){
- const reqEl=$("friendRequestsList"),listEl=$("friendsList");
+ const reqEl=$("friendRequestsList"),sentEl=$("sentFriendRequestsList"),listEl=$("friendsList");
  const {data,error}=await db.from('friendships').select('id,requester_id,addressee_id,status').or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`).order('created_at',{ascending:false}).limit(100);
- if(error){reqEl.textContent='불러오기 실패: '+error.message;listEl.textContent='';return}
- const rows=data||[], ids=[...new Set(rows.filter(r=>r.status==='accepted').map(r=>r.requester_id===user.id?r.addressee_id:r.requester_id).concat(rows.filter(r=>r.status==='pending'&&r.addressee_id===user.id).map(r=>r.requester_id)))];
+ if(error){reqEl.textContent='불러오기 실패: '+error.message;sentEl.textContent='';listEl.textContent='';return}
+ const rows=data||[], incoming=rows.filter(r=>r.status==='pending'&&r.addressee_id===user.id), outgoing=rows.filter(r=>r.status==='pending'&&r.requester_id===user.id), friends=rows.filter(r=>r.status==='accepted');
+ const ids=[...new Set(incoming.map(r=>r.requester_id).concat(outgoing.map(r=>r.addressee_id),friends.map(r=>r.requester_id===user.id?r.addressee_id:r.requester_id)))];
  let names={};if(ids.length){const {data:ps}=await db.from('profiles').select('id,nickname').in('id',ids);(ps||[]).forEach(x=>names[x.id]=x.nickname||'회원')}
- const incoming=rows.filter(r=>r.status==='pending'&&r.addressee_id===user.id);
  reqEl.innerHTML=incoming.length?incoming.map(r=>`<div class="activity-item"><div class="row" style="align-items:center"><b>${esc(names[r.requester_id]||'회원')}</b><button data-accept-list="${r.id}">수락</button></div></div>`).join(''):'받은 친구 요청이 없어요.';
- reqEl.querySelectorAll('[data-accept-list]').forEach(b=>b.onclick=async()=>{const {error}=await db.from('friendships').update({status:'accepted'}).eq('id',b.dataset.acceptList).eq('addressee_id',user.id);if(error)toast(error.message);else{toast('친구가 되었어요.');await loadFriendLists()}});
- const friends=rows.filter(r=>r.status==='accepted');listEl.innerHTML=friends.length?friends.map(r=>{const id=r.requester_id===user.id?r.addressee_id:r.requester_id;return `<div class="activity-item">${esc(names[id]||'회원')}</div>`}).join(''):'아직 친구가 없어요.';
+ reqEl.querySelectorAll('[data-accept-list]').forEach(b=>b.onclick=async()=>{const {error}=await db.from('friendships').update({status:'accepted'}).eq('id',b.dataset.acceptList).eq('addressee_id',user.id);if(error)toast('요청 수락 실패: '+error.message);else{toast('친구가 되었어요.');await loadFriendLists()}});
+ sentEl.innerHTML=outgoing.length?outgoing.map(r=>`<div class="activity-item"><div class="row" style="align-items:center"><b>${esc(names[r.addressee_id]||'회원')}</b><span class="small">수락 대기 중</span></div></div>`).join(''):'보낸 친구 요청이 없어요.';
+ listEl.innerHTML=friends.length?friends.map(r=>{const id=r.requester_id===user.id?r.addressee_id:r.requester_id;return `<div class="activity-item">${esc(names[id]||'회원')}</div>`}).join(''):'아직 친구가 없어요.';
 }
 
 function openProfile(){

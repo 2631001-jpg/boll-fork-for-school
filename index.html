@@ -107,8 +107,12 @@ textarea{resize:vertical;min-height:110px}
 <aside class="leftcol"><div class="panel">
   <div class="side-title">게시판</div>
   <nav class="nav" id="categories">
-  <button class="active" data-cat="자유">☰ 자유게시판</button>
-  <button data-cat="공지">📌 공지사항</button>
+  <button class="active" data-cat="전체">✦ 전체 글</button>
+  <button data-cat="자유">☰ 자유게시판</button>
+  <button data-cat="질문">? 질문</button>
+  <button data-cat="정보">▤ 정보·팁</button>
+  <button data-cat="유머">☻ 유머</button>
+  <button data-cat="일상">☼ 일상</button>
   </nav>
   <div style="margin-top:18px"><button id="writeBtn" class="primary" style="width:100%">＋ 글쓰기</button></div>
   <p class="footer">서로 존중하며 편하게 이야기해요.</p>
@@ -116,7 +120,7 @@ textarea{resize:vertical;min-height:110px}
 
 <main>
   <div class="mobilecats panel"><div class="nav" id="mobileCategories">
-  <button class="active" data-cat="자유">자유</button><button data-cat="공지">공지</button>
+  <button class="active" data-cat="전체">전체</button><button data-cat="자유">자유</button><button data-cat="질문">질문</button><button data-cat="정보">정보</button><button data-cat="유머">유머</button><button data-cat="일상">일상</button>
   </div></div>
   <div class="section-head"><h1 id="feedTitle">전체 글</h1><select id="sort" style="width:auto;max-width:145px"><option value="new">최신순</option><option value="hot">인기순</option></select></div>
   <div id="feed" class="feed"><div class="empty">커뮤니티에 연결하는 중...</div></div>
@@ -141,7 +145,7 @@ textarea{resize:vertical;min-height:110px}
 
 <div class="modalback" id="writeModal"><div class="modal">
 <div class="section-head"><h2 id="writeTitle">새 글 작성</h2><button data-close="writeModal">닫기</button></div>
-<div class="field"><label>게시판</label><select id="postCategory"><option value="자유">자유게시판</option></select></div>
+<div class="field"><label>게시판</label><select id="postCategory"><option>자유</option><option>질문</option><option>정보</option><option>유머</option><option>일상</option></select></div>
 <div class="field"><label>제목</label><input id="postTitle" maxlength="160" placeholder="제목을 입력하세요"></div>
 <div class="field"><label>내용</label><textarea id="postBody" maxlength="15000" placeholder="편하게 이야기를 나눠보세요."></textarea></div>
 <div class="field"><label>이미지 첨부 (이미지 파일 1개, 최대 5MB)</label><input id="postImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div>
@@ -174,7 +178,7 @@ const SUPABASE_URL = "https://hrutxtcgsojpphrbvngw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhydXR4dGNnc29qcHBocmJ2bmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMjIxNDcsImV4cCI6MjEwNzY5ODE0N30.fZG4iTmOS5t_KU_ro1OgDnhJ2_90UKDHKVKefM6QYlY";
 const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_") && window.supabase;
 const db = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-let user=null, profile=null, currentCat="자유", posts=[], editingId=null, openedPost=null, likedIds=new Set();
+let user=null, profile=null, currentCat="전체", posts=[], editingId=null, openedPost=null, likedIds=new Set();
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const show=id=>$(id).classList.add("show");
@@ -211,9 +215,8 @@ async function refresh(){
 
  // 수정: 작성자 프로필 관계를 외래 키 이름으로 명시
  const {data,error}=await db.from("posts")
-  .select("id,title,body,category,created_at,updated_at,user_id,image_url,is_pinned,profiles!posts_user_id_fkey(nickname),likes(count),comments(count)")
+  .select("id,title,body,category,created_at,updated_at,user_id,image_url,profiles!posts_user_id_fkey(nickname),likes(count),comments(count)")
   .eq("is_hidden",false)
-  .in("category",["자유","공지"])
   .order("created_at",{ascending:false})
   .limit(150);
 
@@ -227,15 +230,15 @@ async function refresh(){
 
 function render(){
  const q=$("search").value.trim().toLowerCase(),sort=$("sort").value;
- let arr=posts.filter(p=>p.category===currentCat&&(!q||(p.title+" "+p.body+" "+(p.profiles?.nickname||"")).toLowerCase().includes(q)));
- arr.sort((a,b)=>Number(!!b.is_pinned)-Number(!!a.is_pinned) || (sort==="hot" ? (((b.likes?.[0]?.count||0)*3+(b.comments?.[0]?.count||0))-((a.likes?.[0]?.count||0)*3+(a.comments?.[0]?.count||0))) : (new Date(b.created_at)-new Date(a.created_at))));
- $("feedTitle").textContent=currentCat==="공지"?"공지사항":"자유게시판";
+ let arr=posts.filter(p=>(currentCat==="전체"||p.category===currentCat)&&(!q||(p.title+" "+p.body+" "+(p.profiles?.nickname||"")).toLowerCase().includes(q)));
+ if(sort==="hot")arr.sort((a,b)=>((b.likes?.[0]?.count||0)*3+(b.comments?.[0]?.count||0))-((a.likes?.[0]?.count||0)*3+(a.comments?.[0]?.count||0)));
+ $("feedTitle").textContent=currentCat==="전체"?"전체 글":currentCat+" 게시판";
  $("postCount").textContent=arr.length+"개";
  if(!arr.length){
-  $("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">글 작성하기</button></div>';
+  $("feed").innerHTML='<div class="empty">아직 글이 없거나 검색 결과가 없어요.<br><br><button class="primary" id="emptyWrite">첫 글 작성하기</button></div>';
   const b=$("emptyWrite");if(b)b.onclick=openWriter;return;
  }
- $("feed").innerHTML=arr.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.is_pinned?'<span class="tag">📌 고정</span>':''}${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")&&(p.category!=="공지"||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}${profile?.role==="admin"&&p.category==="공지"?`<button data-pin="${p.id}">${p.is_pinned?"📌 고정 해제":"📌 상단 고정"}</button>`:""}</div></article>`).join("");
+ $("feed").innerHTML=arr.map(p=>`<article class="post" data-post-open="${p.id}" tabindex="0" role="button" aria-label="게시글 열기: ${esc(p.title)}"><div class="meta"><span class="avatar">${initials(p.profiles?.nickname||"회원")}</span><b>${esc(p.profiles?.nickname||"탈퇴한 회원")}</b><span>·</span><span>${timeAgo(p.created_at)}</span><span class="tag">${esc(p.category)}</span>${p.updated_at&&p.updated_at!==p.created_at?'<span>수정됨</span>':''}</div><h2>${esc(p.title)}</h2><div class="postbody">${esc(p.body.length>240?p.body.slice(0,240)+"…":p.body)}</div>${p.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="첨부 이미지">`:""}<div class="actions"><button class="${likedIds.has(p.id)?"liked":""}" data-like="${p.id}">▲ 추천 ${p.likes?.[0]?.count||0}</button><button data-open="${p.id}">댓글 ${p.comments?.[0]?.count||0}</button><button data-report="${p.id}">신고</button>${user&&(user.id===p.user_id||profile?.role==="admin")?`<button data-edit="${p.id}">수정</button><button class="danger" data-delete="${p.id}">삭제</button>`:""}</div></article>`).join("");
  $("feed").querySelectorAll("[data-post-open]").forEach(card=>{
   card.style.cursor="pointer";
   card.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openDetail(card.dataset.postOpen)};
@@ -246,28 +249,21 @@ function render(){
  $("feed").querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>report(b.dataset.report));
  $("feed").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editPost(b.dataset.edit));
  $("feed").querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deletePost(b.dataset.delete));
- $("feed").querySelectorAll("[data-pin]").forEach(b=>b.onclick=()=>togglePin(b.dataset.pin));
 }
 
-function configurePostCategories(selected="자유"){
- const select=$("postCategory");
- select.innerHTML='<option value="자유">자유게시판</option>'+(profile?.role==="admin"?'<option value="공지">공지사항 (관리자 전용)</option>':'');
- select.value=(selected==="공지"&&profile?.role!=="admin")?"자유":selected;
-}
 function openWriter(){
  if(!requireUser())return;
  editingId=null;
  $("writeTitle").textContent="새 글 작성";
  $("publishBtn").textContent="게시하기";
- configurePostCategories(currentCat==="공지"&&profile?.role==="admin"?"공지":"자유");
+ $("postCategory").value=currentCat==="전체"?"자유":currentCat;
  $("postTitle").value="";$("postBody").value="";$("postImage").value="";
  show("writeModal");
 }
 function editPost(id){
  const p=posts.find(x=>x.id===id);if(!p)return;
- if(p.category==="공지"&&profile?.role!=="admin"){toast("공지 수정은 관리자만 할 수 있어요.");return}
  editingId=id;$("writeTitle").textContent="게시글 수정";$("publishBtn").textContent="수정 저장";
- configurePostCategories(p.category);$("postTitle").value=p.title;$("postBody").value=p.body;$("postImage").value="";
+ $("postCategory").value=p.category;$("postTitle").value=p.title;$("postBody").value=p.body;$("postImage").value="";
  show("writeModal");
 }
 async function uploadImage(file){
@@ -300,15 +296,6 @@ $("publishBtn").onclick=async()=>{
  }catch(e){toast("저장 실패: "+e.message)}
  finally{b.disabled=false;$("publishBtn").textContent=editingId?"수정 저장":"게시하기"}
 };
-
-async function togglePin(id){
- if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
- const p=posts.find(x=>x.id===id);if(!p||p.category!=="공지")return;
- const {error}=await db.from("posts").update({is_pinned:!p.is_pinned}).eq("id",id);
- if(error){toast("공지 고정 실패: "+error.message);return}
- toast(p.is_pinned?"공지 고정을 해제했어요.":"공지를 상단에 고정했어요.");
- await refresh();
-}
 
 async function deletePost(id){
  if(!requireUser()||!confirm("이 게시글을 삭제할까요?"))return;
@@ -360,39 +347,11 @@ async function report(postId){
 }
 async function openAdmin(){
  if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
- const {data,error}=await db.from("reports")
-  .select("id,post_id,reporter_id,reason,status,created_at,posts(title,body,image_url,category,created_at)")
-  .not("status","in","(dismissed,reviewed)").order("created_at",{ascending:false}).limit(100);
+ const {data,error}=await db.from("reports").select("id,post_id,reporter_id,reason,status,created_at,posts(title)").order("created_at",{ascending:false}).limit(100);
  if(error){toast("신고함 로딩 실패: "+error.message);return}
  const el=$("reportsList");
- el.innerHTML=(data||[]).map(r=>{
-  const p=r.posts;
-  return `<div class="post" style="margin:10px 0"><div class="meta"><b>신고 상태: ${esc(r.status||"pending")}</b><span>${timeAgo(r.created_at)}</span></div>
-   <p><b>신고 사유:</b> ${esc(r.reason)}</p>
-   <div style="padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel)">
-    <div class="meta"><span class="tag">${esc(p?.category||"게시글")}</span>${p?.created_at?`<span>${timeAgo(p.created_at)}</span>`:""}</div>
-    <h3 style="margin:8px 0">${esc(p?.title||"(게시글을 찾을 수 없음)")}</h3>
-    <p class="postbody" style="white-space:pre-wrap">${esc(p?.body||"게시글 내용이 없거나 이미 삭제됐어요.")}</p>
-    ${p?.image_url?`<img class="postimg" loading="lazy" src="${esc(p.image_url)}" alt="신고된 게시글 이미지">`:""}
-   </div>
-   <div class="actions"><button class="danger" data-delete-reported-post="${esc(r.post_id||"")}" data-report-id="${esc(r.id)}" ${!p||!r.post_id?"disabled":""}>글 삭제</button><button data-status="${esc(r.id)}" data-value="dismissed">기각</button></div></div>`;
- }).join("")||'<div class="empty">접수된 신고가 없어요.</div>';
- el.querySelectorAll("[data-delete-reported-post]").forEach(b=>b.onclick=async()=>{
-  const postId=b.dataset.deleteReportedPost;
-  if(!postId||!confirm("신고된 게시글을 삭제할까요?"))return;
-  b.disabled=true;
-  // 먼저 게시글을 실제 삭제하고, 연결된 신고가 남아 있다면 검토 완료 상태로 바꿉니다.
-  let {error:deleteError}=await db.from("posts").delete().eq("id",postId);
-  if(deleteError){
-   // FK 제약으로 실제 삭제가 막히면 공개 목록에서 숨기는 방식으로 처리합니다.
-   const {error:hideError}=await db.from("posts").update({is_hidden:true}).eq("id",postId);
-   if(hideError){b.disabled=false;toast("글 삭제 실패: "+deleteError.message);return}
-  }
-  const {error:reportError}=await db.from("reports").update({status:"reviewed"}).eq("id",b.dataset.reportId);
-  if(reportError){toast("글은 삭제했지만 신고 상태 변경은 실패했어요: "+reportError.message)}else toast("신고된 글을 삭제했어요.");
-  await refresh();await openAdmin();
- });
- el.querySelectorAll("[data-status]").forEach(b=>b.onclick=async()=>{const {error}=await db.from("reports").update({status:b.dataset.value}).eq("id",b.dataset.status);if(error)toast(error.message);else{toast("신고를 기각했어요.");openAdmin()}});
+ el.innerHTML=(data||[]).map(r=>`<div class="post" style="margin:10px 0"><div class="meta"><b>${esc(r.status)}</b><span>${timeAgo(r.created_at)}</span></div><p><b>게시글:</b> ${esc(r.posts?.title||"(삭제된 게시글)")}</p><p>${esc(r.reason)}</p><div class="actions"><button data-status="${r.id}" data-value="reviewed">검토 완료</button><button data-status="${r.id}" data-value="dismissed">기각</button></div></div>`).join("")||'<div class="empty">접수된 신고가 없어요.</div>';
+ el.querySelectorAll("[data-status]").forEach(b=>b.onclick=async()=>{const {error}=await db.from("reports").update({status:b.dataset.value}).eq("id",b.dataset.status);if(error)toast(error.message);else{toast("신고 상태를 변경했어요.");openAdmin()}});
  show("adminModal");
 }
 

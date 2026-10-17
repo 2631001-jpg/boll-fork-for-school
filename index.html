@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>볼 — 동도 자유 커뮤니티 v12</title>
+<title>볼 — 동도 자유 커뮤니티 v13</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#131722;--panel2:#191f2d;--line:#272e3e;--text:#edf0f7;--muted:#929bb0;--accent:#8b7cff;--accent2:#b0a6ff;--danger:#ff657a;--good:#6ee7b7}
@@ -191,7 +191,7 @@ textarea{resize:vertical;min-height:110px}
 <div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
 <div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
-<div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">관리자 또는 개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 관리자/개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="inviteRoomArea" class="hidden"><h3>회원 초대</h3><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">개발자만 초대할 수 있어요.</p></div><div class="section-head"><h3 id="activeRoomTitle">채팅방</h3><button id="refreshChatBtn">새로고침</button></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div></div></div>
+<div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">관리자 또는 개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 관리자/개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="chatConversationView"><div class="section-head"><div><button id="backToRoomsBtn">← 채팅방 목록</button><h3 id="activeRoomTitle" style="margin:10px 0 0">채팅방</h3></div><div class="row" style="flex:0 0 auto"><button id="openInviteScreenBtn" class="hidden">회원 초대</button><button id="refreshChatBtn">새로고침</button></div></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div><div id="chatInviteScreen" class="hidden"><div class="section-head"><h3 style="margin:0">회원 초대</h3><button id="backToChatBtn">← 채팅으로 돌아가기</button></div><div class="notice">초대할 회원의 정확한 닉네임을 입력하세요. 초대된 회원은 이 채팅방에 입장할 수 있어요.</div><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">관리자 또는 개발자만 초대할 수 있어요.</p></div></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
 <script>
@@ -479,6 +479,9 @@ async function openGroupChat(){
  show("groupChatModal");
  $("createRoomArea").classList.toggle("hidden",!(["developer","admin"].includes(profile?.role)));
  $("activeChatArea").classList.add("hidden");
+ $("chatInviteScreen").classList.add("hidden");
+ $("chatConversationView").classList.remove("hidden");
+ activeChatRoom=null;
  await loadChatRooms();
 }
 async function loadChatRooms(){
@@ -498,7 +501,7 @@ async function enterChatRoom(id){
  const {data:room,error}=await db.from("chat_rooms").select("id,name").eq("id",id).single();
  if(error){toast("채팅방 입장 실패: "+error.message);return}
  activeChatRoom=room;$("activeRoomTitle").textContent=room.name;$("activeChatArea").classList.remove("hidden");
- $("inviteRoomArea").classList.toggle("hidden",!(["developer","admin"].includes(profile?.role)));
+ $("openInviteScreenBtn").classList.toggle("hidden",!( ["developer","admin"].includes(profile?.role)));
  await loadChatMessages();
 }
 async function inviteToRoom(){
@@ -553,6 +556,9 @@ $("menuChats").onclick=openGroupChat;
 $("menuFriends").onclick=()=>user?openFriends():show("authModal");
 $("joinBtn").onclick=()=>user?openProfile():show("authModal");
 $("inviteRoomBtn").onclick=inviteToRoom;
+$("openInviteScreenBtn").onclick=()=>{if(!activeChatRoom)return;$("chatConversationView").classList.add("hidden");$("chatInviteScreen").classList.remove("hidden");$("inviteNickname").focus()};
+$("backToChatBtn").onclick=()=>{$("chatInviteScreen").classList.add("hidden");$("chatConversationView").classList.remove("hidden")};
+$("backToRoomsBtn").onclick=()=>{$("activeChatArea").classList.add("hidden");activeChatRoom=null;loadChatRooms()};
 $("createRoomBtn").onclick=createChatRoom;
 $("sendChatMessageBtn").onclick=sendChatMessage;
 $("refreshChatBtn").onclick=loadChatMessages;

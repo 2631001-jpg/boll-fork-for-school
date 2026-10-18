@@ -194,7 +194,7 @@ textarea{resize:vertical;min-height:110px}
 
 <div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
-<div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 신고함</h2><button data-close="adminModal">닫기</button></div><div id="reportsList"></div></div></div>
+<div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 메뉴</h2><button data-close="adminModal">닫기</button></div><h3>회원 정지 관리</h3><div class="notice">닉네임으로 회원을 찾아 정지하거나 정지를 해제할 수 있어요. 관리자 계정과 본인 계정은 보호됩니다.</div><div class="row"><input id="adminMemberSearch" type="search" autocomplete="off" placeholder="회원 닉네임 검색"><button id="adminMemberSearchBtn" class="primary">검색</button></div><div id="adminMembersList" style="margin:12px 0 22px"></div><hr style="border-color:var(--line);margin:20px 0"><h3>신고함</h3><div id="reportsList"></div></div></div>
 <div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">관리자 또는 개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 관리자/개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="chatConversationView"><div class="section-head"><div><button id="backToRoomsBtn">← 채팅방 목록</button><h3 id="activeRoomTitle" style="margin:10px 0 0">채팅방</h3></div><div class="row" style="flex:0 0 auto"><button id="openInviteScreenBtn" class="hidden">회원 초대</button><button id="refreshChatBtn">새로고침</button></div></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div><div id="chatInviteScreen" class="hidden"><div class="section-head"><h3 style="margin:0">회원 초대</h3><button id="backToChatBtn">← 채팅으로 돌아가기</button></div><div class="notice">초대할 회원의 정확한 닉네임을 입력하세요. 초대된 회원은 이 채팅방에 입장할 수 있어요.</div><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">관리자 또는 개발자만 초대할 수 있어요.</p></div></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
@@ -233,6 +233,7 @@ async function refresh(){
  const {data:auth}=await db.auth.getUser();
  user=auth?.user||null;
  await loadProfile();
+ if(user && profile?.is_suspended){await db.auth.signOut();user=null;profile=null;toast("이 계정은 이용 정지 상태입니다.");}
  $("who").textContent=user?(profile?.nickname||user.email?.split("@")[0]||"회원"):"로그인하지 않음";
  $("authBtn").textContent=user?"내 프로필":"로그인";
  $("accountStatus").textContent=user?(profile?.role==="admin"?"관리자":"회원"):"게스트";
@@ -405,8 +406,34 @@ async function report(postId){
  const {error}=await db.from("reports").insert({post_id:postId,reporter_id:user.id,reason:reason.trim().slice(0,1000)});
  toast(error?"신고 실패: "+error.message:"신고가 접수됐어요.");
 }
+async function searchAdminMembers(){
+ if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
+ const q=$("adminMemberSearch").value.trim();
+ let query=db.from("profiles").select("id,nickname,role,is_suspended").order("nickname").limit(100);
+ if(q) query=query.ilike("nickname",`%${q.replace(/[%_]/g,"")}%`);
+ const {data,error}=await query;
+ const el=$("adminMembersList");
+ if(error){el.innerHTML='<p class="small">회원 목록을 불러오지 못했어요: '+esc(error.message)+'</p>';return}
+ el.innerHTML=(data||[]).map(m=>{
+  const protectedUser=m.id===user?.id||m.role==="admin";
+  const status=m.is_suspended?'<span class="tag" style="color:var(--danger)">정지됨</span>':'<span class="tag">정상</span>';
+  const action=protectedUser?'<span class="small">보호된 계정</span>':`<button class="${m.is_suspended?"primary":"danger"}" data-suspend-user="${esc(m.id)}" data-suspend-value="${m.is_suspended?"false":"true"}">${m.is_suspended?"정지 해제":"회원 정지"}</button>`;
+  return `<div class="activity-item"><div class="row" style="align-items:center"><div style="min-width:0"><b>${esc(m.nickname||"이름 없는 회원")}</b> <span class="role-badge ${m.role==="admin"?"admin":""}">${m.role==="admin"?"관리자":"회원"}</span><div class="small">${status}</div></div>${action}</div></div>`;
+ }).join("")||'<div class="empty">검색된 회원이 없어요.</div>';
+ el.querySelectorAll("[data-suspend-user]").forEach(b=>b.onclick=async()=>{
+  const suspend=b.dataset.suspendValue==="true";
+  if(!confirm(suspend?"이 회원을 정지할까요?":"이 회원의 정지를 해제할까요?"))return;
+  b.disabled=true;
+  const {error}=await db.rpc("set_member_suspension",{p_user_id:b.dataset.suspendUser,p_is_suspended:suspend});
+  if(error){toast("처리 실패: "+error.message);b.disabled=false;return}
+  toast(suspend?"회원 이용을 정지했어요.":"회원 정지를 해제했어요.");
+  await searchAdminMembers();
+ });
+}
+
 async function openAdmin(){
  if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
+ await searchAdminMembers();
  const {data,error}=await db.from("reports")
   .select("id,post_id,reporter_id,reason,status,created_at,posts(title,body,image_url,category,created_at)")
   .not("status","in","(dismissed,reviewed)").order("created_at",{ascending:false}).limit(100);
@@ -568,6 +595,8 @@ $("sendChatMessageBtn").onclick=sendChatMessage;
 $("refreshChatBtn").onclick=loadChatMessages;
 $("chatMessageInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendChatMessage()});
 $("adminBtn").onclick=openAdmin;
+$("adminMemberSearchBtn").onclick=searchAdminMembers;
+$("adminMemberSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchAdminMembers()});
 $("friendsBtn").onclick=openFriends;
 $("userSearchBtn").onclick=searchUsers;
 $("userSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchUsers()});

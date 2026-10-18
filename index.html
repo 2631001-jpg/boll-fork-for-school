@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>볼 — 동도 자유 커뮤니티 v13</title>
+<title>볼 — 시볼급 v13</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#131722;--panel2:#191f2d;--line:#272e3e;--text:#edf0f7;--muted:#929bb0;--accent:#8b7cff;--accent2:#b0a6ff;--danger:#ff657a;--good:#6ee7b7}
@@ -477,7 +477,7 @@ let activeChatRoom=null;
 async function openGroupChat(){
  if(!requireUser())return;
  show("groupChatModal");
- $("createRoomArea").classList.toggle("hidden",!(["developer","admin"].includes(profile?.role)));
+ $("createRoomArea").classList.toggle("hidden",!(profile?.role==="admin"));
  $("activeChatArea").classList.add("hidden");
  $("chatInviteScreen").classList.add("hidden");
  $("chatConversationView").classList.remove("hidden");
@@ -501,11 +501,11 @@ async function enterChatRoom(id){
  const {data:room,error}=await db.from("chat_rooms").select("id,name").eq("id",id).single();
  if(error){toast("채팅방 입장 실패: "+error.message);return}
  activeChatRoom=room;$("activeRoomTitle").textContent=room.name;$("activeChatArea").classList.remove("hidden");
- $("openInviteScreenBtn").classList.toggle("hidden",!( ["developer","admin"].includes(profile?.role)));
+ $("openInviteScreenBtn").classList.toggle("hidden",profile?.role!=="admin");
  await loadChatMessages();
 }
 async function inviteToRoom(){
- if(!(["developer","admin"].includes(profile?.role))||!activeChatRoom){toast("관리자 또는 개발자만 회원을 초대할 수 있어요.");return}
+ if(!(profile?.role==="admin")||!activeChatRoom){toast("관리자만 회원을 초대할 수 있어요.");return}
  const nickname=$("inviteNickname").value.trim();if(!nickname){toast("초대할 회원 닉네임을 입력해 주세요.");return}
  const {data:target,error:findError}=await db.from("profiles").select("id,nickname").ilike("nickname",nickname).limit(1).maybeSingle();
  if(findError||!target){toast("해당 닉네임의 회원을 찾지 못했어요.");return}
@@ -522,7 +522,7 @@ async function loadChatMessages(){
  el.scrollTop=el.scrollHeight;
 }
 async function createChatRoom(){
- if(!user || !(["developer","admin"].includes(profile?.role))){toast("관리자 또는 개발자만 채팅방을 만들 수 있어요.");return}
+ if(!user || !(profile?.role==="admin")){toast("관리자만 채팅방을 만들 수 있어요.");return}
  const name=$("newRoomName").value.trim();
  if(!name){toast("채팅방 이름을 입력해 주세요.");return}
  // chat_rooms 직접 INSERT 대신 서버 측 RPC로 생성해 RLS를 안전하게 처리

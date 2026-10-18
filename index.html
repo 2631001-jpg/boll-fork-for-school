@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>볼 — 시볼급 v13</title>
+<title>볼 — 동도 자유 커뮤니티 v13</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#131722;--panel2:#191f2d;--line:#272e3e;--text:#edf0f7;--muted:#929bb0;--accent:#8b7cff;--accent2:#b0a6ff;--danger:#ff657a;--good:#6ee7b7}
@@ -106,6 +106,10 @@ textarea{resize:vertical;min-height:110px}
 .mobilecats{display:block;margin-bottom:14px}
 .authlabel{display:none}
 }
+
+.copyright-footer{max-width:1180px;margin:0 auto;padding:22px 16px calc(22px + env(safe-area-inset-bottom));border-top:1px solid var(--line);color:var(--muted);font-size:11px;text-align:center;letter-spacing:.2px}
+.copyright-footer .creator-mark{display:block;margin-top:4px;color:#aaa2e8}
+@media(max-width:650px){.copyright-footer{padding-bottom:calc(86px + env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body>
@@ -651,5 +655,6 @@ if(db){
 }else refresh();
 })();
 </script>
+<footer id="copyrightFooter" class="copyright-footer">© 2026 볼 — 동도 자유 커뮤니티. All rights reserved.<span class="creator-mark">Designed and built by the site creator.</span></footer>
 </body>
 </html>

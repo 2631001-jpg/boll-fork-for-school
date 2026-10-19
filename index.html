@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>볼 — 시볼급 말랑함 v13</title>
+<title>볼 — 시볼급 말랑함 v14</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{color-scheme:dark;--bg:#0b0d12;--panel:#131722;--panel2:#191f2d;--line:#272e3e;--text:#edf0f7;--muted:#929bb0;--accent:#8b7cff;--accent2:#b0a6ff;--danger:#ff657a;--good:#6ee7b7}
@@ -194,7 +194,7 @@ textarea{resize:vertical;min-height:110px}
 
 <div class="modalback" id="friendsModal"><div class="modal"><div class="section-head"><h2>유저 검색 · 친구</h2><button data-close="friendsModal">닫기</button></div><div class="field"><label>닉네임 검색</label><div class="row"><input id="userSearchInput" type="search" name="member-lookup" autocomplete="off" placeholder="닉네임 입력"><button id="userSearchBtn" class="primary">검색</button></div></div><div id="userSearchResults"></div><hr style="border-color:var(--line);margin:20px 0"><h3>받은 친구 요청</h3><div id="friendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>보낸 친구 요청</h3><div id="sentFriendRequestsList" class="small">불러오는 중...</div><hr style="border-color:var(--line);margin:20px 0"><h3>내 친구</h3><div id="friendsList" class="small">불러오는 중...</div></div></div>
 <div class="modalback" id="detailModal"><div class="modal"><div class="section-head"><h2>게시글</h2><button data-close="detailModal">닫기</button></div><div id="detailContent"></div></div></div>
-<div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 메뉴</h2><button data-close="adminModal">닫기</button></div><h3>회원 정지 관리</h3><div class="notice">닉네임으로 회원을 찾아 정지하거나 정지를 해제할 수 있어요. 관리자 계정과 본인 계정은 보호됩니다.</div><div class="row"><input id="adminMemberSearch" type="search" autocomplete="off" placeholder="회원 닉네임 검색"><button id="adminMemberSearchBtn" class="primary">검색</button></div><div id="adminMembersList" style="margin:12px 0 22px"></div><hr style="border-color:var(--line);margin:20px 0"><h3>신고함</h3><div id="reportsList"></div></div></div>
+<div class="modalback" id="adminModal"><div class="modal"><div class="section-head"><h2>관리자 메뉴</h2><button data-close="adminModal">닫기</button></div><h3>회원 정지 관리</h3><div class="notice">닉네임으로 회원을 검색하고 이메일을 확인할 수 있어요. 정지/해제 기능은 유지되며 관리자 계정과 본인 계정은 보호됩니다.</div><div class="row"><input id="adminMemberSearch" type="search" autocomplete="off" placeholder="회원 닉네임 검색"><button id="adminMemberSearchBtn" class="primary">검색</button></div><div id="adminMembersList" style="margin:12px 0 22px"></div><hr style="border-color:var(--line);margin:20px 0"><h3>신고함</h3><div id="reportsList"></div></div></div>
 <div class="modalback" id="groupChatModal"><div class="modal"><div class="section-head"><h2>단체 채팅방</h2><button data-close="groupChatModal">닫기</button></div><div class="notice">관리자 또는 개발자가 초대한 회원만 해당 채팅방에 입장할 수 있어요. 채팅방 생성과 초대는 관리자/개발자만 가능합니다.</div><div id="createRoomArea" class="hidden"><div class="row"><input id="newRoomName" maxlength="60" placeholder="새 채팅방 이름"><button id="createRoomBtn" class="primary">방 만들기</button></div></div><h3>채팅방 목록</h3><div id="chatRoomsList" class="small">불러오는 중...</div><div id="activeChatArea" class="hidden"><hr style="border-color:var(--line);margin:18px 0"><div id="chatConversationView"><div class="section-head"><div><button id="backToRoomsBtn">← 채팅방 목록</button><h3 id="activeRoomTitle" style="margin:10px 0 0">채팅방</h3></div><div class="row" style="flex:0 0 auto"><button id="openInviteScreenBtn" class="hidden">회원 초대</button><button id="refreshChatBtn">새로고침</button></div></div><div id="chatMessages" class="chat-messages"></div><div class="row"><input id="chatMessageInput" maxlength="2000" placeholder="메시지 입력"><button id="sendChatMessageBtn" class="primary">전송</button></div></div><div id="chatInviteScreen" class="hidden"><div class="section-head"><h3 style="margin:0">회원 초대</h3><button id="backToChatBtn">← 채팅으로 돌아가기</button></div><div class="notice">초대할 회원의 정확한 닉네임을 입력하세요. 초대된 회원은 이 채팅방에 입장할 수 있어요.</div><div class="row"><input id="inviteNickname" maxlength="24" placeholder="초대할 회원 닉네임"><button id="inviteRoomBtn" class="primary">초대</button></div><p class="small">관리자 또는 개발자만 초대할 수 있어요.</p></div></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
@@ -409,16 +409,19 @@ async function report(postId){
 async function searchAdminMembers(){
  if(profile?.role!=="admin"){toast("관리자 권한이 필요해요.");return}
  const q=$("adminMemberSearch").value.trim();
- let query=db.from("profiles").select("id,nickname,role,is_suspended").order("nickname").limit(100);
- if(q) query=query.ilike("nickname",`%${q.replace(/[%_]/g,"")}%`);
- const {data,error}=await query;
  const el=$("adminMembersList");
- if(error){el.innerHTML='<p class="small">회원 목록을 불러오지 못했어요: '+esc(error.message)+'</p>';return}
+ el.textContent="회원 목록을 불러오는 중...";
+ // 이메일은 auth.users에서 직접 조회하지 않고, 관리자 권한을 서버에서 검증하는 RPC로 가져옵니다.
+ const {data,error}=await db.rpc("admin_list_member_emails",{p_query:q});
+ if(error){
+  el.innerHTML='<p class="small">회원 목록을 불러오지 못했어요: '+esc(error.message)+'<br>Supabase SQL Editor에서 admin-email-function.sql의 SQL을 실행했는지 확인해 주세요.</p>';
+  return;
+ }
  el.innerHTML=(data||[]).map(m=>{
   const protectedUser=m.id===user?.id||m.role==="admin";
   const status=m.is_suspended?'<span class="tag" style="color:var(--danger)">정지됨</span>':'<span class="tag">정상</span>';
   const action=protectedUser?'<span class="small">보호된 계정</span>':`<button class="${m.is_suspended?"primary":"danger"}" data-suspend-user="${esc(m.id)}" data-suspend-value="${m.is_suspended?"false":"true"}">${m.is_suspended?"정지 해제":"회원 정지"}</button>`;
-  return `<div class="activity-item"><div class="row" style="align-items:center"><div style="min-width:0"><b>${esc(m.nickname||"이름 없는 회원")}</b> <span class="role-badge ${m.role==="admin"?"admin":""}">${m.role==="admin"?"관리자":"회원"}</span><div class="small">${status}</div></div>${action}</div></div>`;
+  return `<div class="activity-item"><div class="row" style="align-items:center"><div style="min-width:0;overflow-wrap:anywhere"><b>${esc(m.nickname||"이름 없는 회원")}</b> <span class="role-badge ${m.role==="admin"?"admin":""}">${m.role==="admin"?"관리자":"회원"}</span><div class="small">이메일: ${esc(m.email||"이메일 없음")}</div><div class="small">${status}</div></div>${action}</div></div>`;
  }).join("")||'<div class="empty">검색된 회원이 없어요.</div>';
  el.querySelectorAll("[data-suspend-user]").forEach(b=>b.onclick=async()=>{
   const suspend=b.dataset.suspendValue==="true";

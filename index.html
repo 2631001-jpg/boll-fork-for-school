@@ -549,8 +549,17 @@ async function loadChatMessages(){
  const el=$("chatMessages");
  const {data,error}=await db.from("chat_messages").select("id,room_id,user_id,body,created_at,profiles!chat_messages_user_id_fkey(nickname)").eq("room_id",activeChatRoom.id).order("created_at",{ascending:true}).limit(200);
  if(error){el.textContent="메시지를 불러오지 못했어요: "+error.message;return}
- el.innerHTML=data?.length?data.map(m=>`<div class="chat-message"><div class="meta"><b>${esc(m.profiles?.nickname||"회원")}</b><span>${timeAgo(m.created_at)}</span></div><div class="postbody">${linkify(m.body)}</div></div>`).join(""):'<p class="small">첫 메시지를 보내 보세요.</p>';
+ el.innerHTML=data?.length?data.map(m=>`<div class="chat-message"><div class="meta"><b>${esc(m.profiles?.nickname||"회원")}</b><span>${timeAgo(m.created_at)}</span>${(profile?.role==="admin"||m.user_id===user?.id)?`<button class="danger" data-delete-chat-message="${m.id}" style="margin-left:auto;padding:4px 8px;font-size:12px">삭제</button>`:""}</div><div class="postbody">${linkify(m.body)}</div></div>`).join(""):'<p class="small">첫 메시지를 보내 보세요.</p>';
+ el.querySelectorAll("[data-delete-chat-message]").forEach(b=>b.onclick=()=>deleteChatMessage(b.dataset.deleteChatMessage));
  el.scrollTop=el.scrollHeight;
+}
+async function deleteChatMessage(messageId){
+ if(!user||!activeChatRoom)return;
+ if(!confirm("이 채팅 메시지를 삭제할까요? 삭제하면 복구할 수 없어요."))return;
+ const {error}=await db.from("chat_messages").delete().eq("id",messageId).eq("room_id",activeChatRoom.id);
+ if(error){toast("메시지 삭제 실패: "+error.message+" (Supabase 삭제 정책을 확인해 주세요.)");return}
+ toast("메시지를 삭제했어요.");
+ await loadChatMessages();
 }
 async function createChatRoom(){
  if(!user || !(profile?.role==="admin")){toast("관리자만 채팅방을 만들 수 있어요.");return}
